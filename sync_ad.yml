@@ -1,0 +1,25 @@
+---
+- name: Sync AD with Azure
+  hosts: windows
+  gather_facts: false  # Optional: can be true if you need server facts
+
+  tasks:
+    - name: Run Start-ADSyncSyncCycle
+      ansible.windows.win_powershell:
+        script: |
+          try {
+            Import-Module ADSync
+            Start-ADSyncSyncCycle -PolicyType Delta # Or Initial for a full sync
+            Write-Host "AD Sync Cycle initiated successfully."
+          }
+          catch {
+            Write-Error "Failed to initiate AD Sync Cycle: $_"
+            exit 1
+          }
+        register: sync_result
+        changed_when: "'AD Sync Cycle initiated successfully.' in sync_result.stdout"
+        failed_when: sync_result.rc != 0
+
+    - name: Display sync result
+      debug:
+        var: sync_result.stdout_lines
